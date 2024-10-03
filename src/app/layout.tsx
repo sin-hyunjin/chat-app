@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import "@/public/styles/globals.css";
-import { geistMono, geistSans } from "@/public/fonts";
+import "@public/styles/globals.css";
+import { geistMono, geistSans } from "@public/fonts";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { cn } from "@/lib/utils";
