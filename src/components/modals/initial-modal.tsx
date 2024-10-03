@@ -1,7 +1,8 @@
 "use client";
 
-import * as z from "zod";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { useForm } from "react-hook-form";
 
 import {
@@ -22,7 +23,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { FileUpload } from "../file-upload";
+
+/**
+ * formSchema: 서버 이름과 이미지를 검증하기 위한 Zod 스키마
+ * 1. name 필드는 최소 1자 이상이어야 하며, 없을 경우 오류 메시지를 표시
+ * 2. imageUrl 필드도 최소 1자 이상이어야 하며, 없을 경우 오류 메시지를 표시
+ */
 
 const formSchema = z.object({
   name: z.string().min(1, {
@@ -34,34 +41,46 @@ const formSchema = z.object({
 });
 
 /**
- * InitialModal 컴포넌트는 사용자에게 서버 이름과 이미지를 입력받는 모달 창을 렌더링하는 역할
- *
- * 1. Zod를 사용해 서버 이름과 이미지를 검증하는 스키마를 정의하고, react-hook-form을 통해 폼 상태를 관리
- * 2. 사용자가 모달 창에 접근하면 서버 이름과 이미지를 입력할 수 있는 폼을 표시
- * 3. 폼은 제출 시 데이터 유효성을 검사하고, 검증이 통과되면 제출된 데이터를 콘솔에 출력 (추후 실제 처리 로직을 추가 가능).
- * 4. 모달은 서버 이름과 이미지를 필수로 입력받도록 하며, 추후 이미지를 업로드하는 기능이 추가될 예정
- * 5. 모달 컴포넌트는 클라이언트 사이드에서만 렌더링되며, 초기에는 모달이 렌더링되지 않고 마운트된 후에만 표시
+ * InitialModal 컴포넌트:
+ * 1. 서버 이름과 이미지를 입력하는 모달 창을 제공
+ * 2. Zod를 사용해 입력을 검증하고, react-hook-form을 통해 폼 상태를 관리
+ * 3. 사용자가 서버 이름과 이미지를 입력하고 제출할 수 있음
+ * 4. 이미지 업로드는 FileUpload 컴포넌트를 통해 처리
+ * 5. 모달은 컴포넌트가 클라이언트 측에 마운트된 후에만 렌더링됨
  */
-
 export const InitialModal = () => {
-  // 컴포넌트가 마운트되었는지 여부를 추적하는 상태 변수
+  /**
+   * isMounted: 컴포넌트가 마운트되었는지 여부를 추적하는 상태
+   * 초기 상태는 false이며, useEffect를 통해 마운트 후 true로 설정
+   */
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  /**
+   * useForm: react-hook-form을 사용해 폼 상태를 관리
+   * - resolver: Zod 스키마를 사용한 폼 검증
+   * - defaultValues: 서버 이름과 이미지 URL의 기본 값을 설정
+   */
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
       imageUrl: "",
+      name: "",
     },
   });
 
-  // 폼이 제출 중인지 확인
+  /**
+   * isLoading: 폼이 제출 중인 상태를 나타내는 변수
+   * formState.isSubmitting 값을 참조하여 폼 제출 중일 때 버튼을 비활성화
+   */
   const isLoading = form.formState.isSubmitting;
-
+  /**
+   * onSubmit: 폼 제출 시 호출되는 비동기 함수
+   * 입력된 서버 이름과 이미지 URL을 콘솔에 출력 (추후 추가 로직 삽입 가능)
+   */
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log(values);
   };
@@ -69,6 +88,14 @@ export const InitialModal = () => {
   if (!isMounted) {
     return null;
   }
+
+  /**
+   * Dialog 렌더: 모달 창을 렌더링
+   * - DialogHeader: 모달의 상단 헤더를 정의 (서버 이름과 이미지 설명 포함)
+   * - DialogContent: 모달 본문에 서버 이미지 업로드와 이름 입력 필드를 포함
+   * - Form: 폼 전체를 감싸는 컴포넌트
+   * - DialogFooter: 하단에 제출 버튼을 배치
+   */
   return (
     <Dialog open>
       <DialogContent className="bg-white text-black p-0 overflow-hidden">
@@ -87,9 +114,33 @@ export const InitialModal = () => {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <div className="space-y-8 px-6">
               <div className="flex items-center justify-center text-center">
-                TODO : 이미지 업로드 기능
+                {/**
+                 * FormField: 이미지 URL을 입력 받는 필드
+                 * - FileUpload 컴포넌트로 이미지 업로드 기능을 제공
+                 * - 업로드된 이미지 URL이 폼 상태에 저장됨
+                 */}
+                <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <FileUpload
+                          endpoint="messageFile"
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
+              {/**
+               * FormField: 서버 이름을 입력 받는 필드
+               * - 사용자가 입력한 서버 이름이 폼 상태에 저장됨
+               */}
               <FormField
                 control={form.control}
                 name="name"
