@@ -1,9 +1,11 @@
 "use client";
 
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 
 import {
   Dialog,
@@ -54,11 +56,11 @@ export const InitialModal = () => {
    * 초기 상태는 false이며, useEffect를 통해 마운트 후 true로 설정
    */
   const [isMounted, setIsMounted] = useState(false);
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  const router = useRouter();
   /**
    * useForm: react-hook-form을 사용해 폼 상태를 관리
    * - resolver: Zod 스키마를 사용한 폼 검증
@@ -82,7 +84,14 @@ export const InitialModal = () => {
    * 입력된 서버 이름과 이미지 URL을 콘솔에 출력 (추후 추가 로직 삽입 가능)
    */
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log(values);
+    try {
+      await axios.post("/api/servers", values);
+      form.reset();
+      router.refresh;
+      window.location.reload();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   if (!isMounted) {
