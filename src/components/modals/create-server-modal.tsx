@@ -1,7 +1,6 @@
 "use client";
 
 import axios from "axios";
-import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
@@ -26,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "../file-upload";
+import { useModalStore } from "@/hooks/use-modal-store";
 
 /**
  * formSchema: 서버 이름과 이미지를 검증하기 위한 Zod 스키마
@@ -43,24 +43,17 @@ const formSchema = z.object({
 });
 
 /**
- * InitialModal 컴포넌트:
+ * CreateServerModal 컴포넌트:
  * 1. 서버 이름과 이미지를 입력하는 모달 창을 제공
  * 2. Zod를 사용해 입력을 검증하고, react-hook-form을 통해 폼 상태를 관리
  * 3. 사용자가 서버 이름과 이미지를 입력하고 제출할 수 있음
  * 4. 이미지 업로드는 FileUpload 컴포넌트를 통해 처리
  * 5. 모달은 컴포넌트가 클라이언트 측에 마운트된 후에만 렌더링됨
  */
-export const InitialModal = () => {
-  /**
-   * isMounted: 컴포넌트가 마운트되었는지 여부를 추적하는 상태
-   * 초기 상태는 false이며, useEffect를 통해 마운트 후 true로 설정
-   */
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
+export const CreateServerModal = () => {
+  const { isOpen, onClose, type } = useModalStore();
   const router = useRouter();
+
   /**
    * useForm: react-hook-form을 사용해 폼 상태를 관리
    * - resolver: Zod 스키마를 사용한 폼 검증
@@ -88,16 +81,18 @@ export const InitialModal = () => {
       await axios.post("/api/servers", values);
       form.reset();
       router.refresh();
-      window.location.reload();
     } catch (error) {
       console.log(error);
     }
   };
 
-  if (!isMounted) {
-    return null;
-  }
+  const isModalOpen = isOpen && type === "createServer";
 
+  console.log(isModalOpen);
+  const handleClose = () => {
+    form.reset();
+    onClose();
+  };
   /**
    * Dialog 렌더: 모달 창을 렌더링
    * - DialogHeader: 모달의 상단 헤더를 정의 (서버 이름과 이미지 설명 포함)
@@ -106,7 +101,7 @@ export const InitialModal = () => {
    * - DialogFooter: 하단에 제출 버튼을 배치
    */
   return (
-    <Dialog open>
+    <Dialog open={isModalOpen} onOpenChange={handleClose}>
       <DialogContent className="overflow-hidden bg-white p-0 text-black">
         <DialogHeader className="px-6 pt-8">
           <DialogTitle className="text-center text-2xl font-bold">

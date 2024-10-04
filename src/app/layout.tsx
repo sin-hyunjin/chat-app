@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 
 import "@public/styles/globals.css";
 import { geistMono, geistSans } from "@public/fonts";
+import { cn } from "@/lib/utils";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { cn } from "@/lib/utils";
+import { ModalProvider } from "@/components/providers/modal-provider";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -22,7 +23,7 @@ export default function RootLayout({
         <body
           className={cn(
             `${geistSans.variable} ${geistMono.variable} antialiased`,
-            "bg-white dark:bg-[#313338]"
+            "bg-white dark:bg-[#313338]",
           )}
         >
           <ThemeProvider
@@ -31,6 +32,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <ModalProvider />
             {children}
           </ThemeProvider>
         </body>

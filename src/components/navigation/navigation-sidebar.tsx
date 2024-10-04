@@ -5,6 +5,8 @@ import { NavigationAction } from "./navigation-action";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { NavigationItem } from "./navigation-item";
+import { ModeToggle } from "@/components/mode-toggle";
+import { UserButton } from "@clerk/nextjs";
 
 /** component : NavigationSidebar
  * 사용자의 프로필을 불러오고, 만약 프로필이 없으면 홈으로 리디렉션 시킴
@@ -44,6 +46,18 @@ export const NavigationSidebar = async () => {
           </div>
         ))}
       </ScrollArea>
+
+      <div className="mt-auto flex flex-col items-center gap-y-4 pb-3">
+        <ModeToggle />
+        <UserButton
+          afterSwitchSessionUrl="/"
+          appearance={{
+            elements: {
+              avatarBox: "h-[48px] w-[48px]",
+            },
+          }}
+        />
+      </div>
     </div>
   );
 };
