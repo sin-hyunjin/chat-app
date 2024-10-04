@@ -13,7 +13,6 @@ import { useModalStore } from "@/hooks/use-modal-store";
 export const NavigationAction = () => {
   const { onOpen } = useModalStore();
 
-  console.log(onOpen);
   return (
     <div>
       <ActionTooltip side="right" align="center" label="Add a server">

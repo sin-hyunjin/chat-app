@@ -82,3 +82,16 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/*  <ModalProvider />를 사용하면 server/sererId 에서 사이드네비게이션이 md:flex와 hidden이 적용이 안되는 현상 때문에 일반 css에 작성 */
+.navigation-sidebar {
+  display: none; /* hidden 클래스를 일반 CSS로 변환 */
+}
+
+/* md:flex 클래스의 미디어 쿼리 */
+@media (min-width: 768px) {
+  /* md: 브레이크포인트 (768px) */
+  .navigation-sidebar {
+    display: flex; /* md:flex가 적용되면 flex로 변경 */
+  }
+}
