@@ -16,6 +16,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import { useModalStore } from "@/hooks/use-modal-store";
 
 interface ServerHeaderProps {
   server: ServerWithMemberWithProfiles;
@@ -27,7 +28,7 @@ interface ServerHeaderProps {
  * 사용자의 역할에 따라 다양한 드롭다운 메뉴 항목을 제공
  * - 서버 이름 표시
  * - ADMIN 또는 MODERATOR 역할에 따라 다양한 관리 기능 제공
- *   - 사람 초대
+ *   - invite : 사람 초대
  *   - 서버 설정
  *   - 멤버 관리
  *   - 채널 생성
@@ -35,6 +36,8 @@ interface ServerHeaderProps {
  */
 
 export const ServerHeader = ({ server, role }: ServerHeaderProps) => {
+  const { onOpen } = useModalStore();
+
   const isAdmin = role === MemberRole.ADMIN;
   const isModerator = isAdmin || role === MemberRole.MODERATOR;
 
@@ -49,7 +52,10 @@ export const ServerHeader = ({ server, role }: ServerHeaderProps) => {
       <DropdownMenuContent className="w-56 space-y-[2px] text-xs font-medium text-black dark:text-neutral-400">
         {/* 사용자가 MODERATOR인 경우 "Invite People" 항목 표시 */}
         {isModerator && (
-          <DropdownMenuItem className="cursor-pointer px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400">
+          <DropdownMenuItem
+            className="cursor-pointer px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400"
+            onClick={() => onOpen("invite", { server })}
+          >
             Invite People
             <UserPlus className="ml-auto h-4 w-4" />
           </DropdownMenuItem>
