@@ -10,40 +10,69 @@ import { useModalStore } from "@/hooks/use-modal-store";
 import { Label } from "@radix-ui/react-label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Copy, RefreshCw } from "lucide-react";
+import { CheckIcon, Copy, RefreshCw } from "lucide-react";
+import { useOrigin } from "@/hooks/use-origin";
+import { useState } from "react";
+import axios from "axios";
 
 /**
  * InviteModal 컴포넌트:
  *
- * 이 컴포넌트는 사용자가 초대 모달을 열 때, 친구 초대 링크를 생성하고 복사할 수 있는 기능을 제공
+ * 이 컴포넌트는 사용자가 서버의 초대 링크를 확인, 복사, 그리고 새로운 링크로 생성할 수 있는 모달 창을 제공.
  *
  * 주요 기능:
- * 1. **isModalOpen**: `useModalStore()`를 사용하여 현재 모달이 열려 있는지(`isOpen`)와 모달 타입이 "invite"인지(`type`) 확인.
- *    이 두 조건이 충족되면 모달이 열림
+ * 1. **useModalStore()**: 전역 상태를 관리하며, 모달의 열림 상태, 타입, 서버 데이터를 가져옴. 모달이 "invite" 타입일 때만 표시.
+ * 2. **useOrigin()**: 현재 도메인(origin)을 가져와 초대 링크 URL을 구성.
+ * 3. **Dialog**: Radix UI의 Dialog 컴포넌트를 이용해 모달을 제어.
+ * 4. **DialogContent**: 모달 내부의 콘텐츠를 표시. 초대 링크와 복사 및 재생성 기능을 포함.
+ * 5. **Invite URL**: 서버 데이터에서 초대 코드를 사용해 초대 링크를 구성.
+ * 6. **onCopy()**: 초대 링크를 클립보드에 복사하고, 복사 완료 후 상태를 변경
+ * 7. **onNew()**: Axios를 이용해 서버 초대 링크를 재생성하는 요청을 보냄. 새로운 초대 링크를 응답받으면 상태를 업데이트해 모달에 표시.
+ * 8. **isLoading**: 서버 요청 중 로딩 상태를 관리하여 버튼의 비활성화 처리 및 사용자 경험 향상.
  *
- * 2. **Dialog**: 모달 창을 제공하는 컴포넌트로, `open` 속성으로 모달이 열려 있는지 여부를 설정하고,
- *    `onOpenChange`를 통해 모달을 닫는 이벤트 핸들러를 연결.
- *
- * 3. **DialogContent**: 모달 내부 콘텐츠를 담는 컴포넌트로, 모달의 스타일(배경, 패딩, 텍스트 색상 등)을 설정.
- *
- * 4. **DialogHeader**: 모달의 헤더 부분을 구성하며, 여기에는 타이틀을 포함.
- *
- * 5. **DialogTitle**: 모달의 제목으로, 중앙에 배치된 큰 텍스트로 "Invite Friends"라는 내용을 표시.
- *
- * 6. **친구초대 링크 생성**:
- *    - **Label**: 서버 초대 링크에 대한 라벨을 추가하여 설명.
- *    - **Input**: 초대 링크를 보여주는 입력 필드. 사용자 편의를 위해 복사 기능이 제공됩니다. 링크는 `value` 속성을 통해 고정된 값을 가진다.
- *    - **Copy 버튼**: 초대 링크를 복사하는 기능을 제공하며, `Copy` 아이콘과 함께 `Button` 컴포넌트로 구성 됨.
- *
- * 7. **새로운 링크 생성 버튼**:
- *    - 사용자가 새로운 초대 링크를 생성할 수 있는 링크 생성 버튼을 추가. `RefreshCw` 아이콘이 함께 표시되며,
- *      해당 버튼을 클릭하면 새로운 링크를 생성할 수 있음을 나타냄.
+ * @returns {JSX.Element} - 친구 초대 링크를 복사하거나 새로 생성할 수 있는 모달 창 UI를 반환
  */
+
 export const InviteModal = () => {
-  const { isOpen, onClose, type } = useModalStore();
+  //1. **useModalStore()**: 전역 상태를 관리하며, 모달의 열림 상태, 타입, 서버 데이터를 가져옴. 모달이 "invite" 타입일 때만 표시.
+  const { onOpen, isOpen, onClose, type, data } = useModalStore();
+  //2. **useOrigin()**: 현재 도메인(origin)을 가져와 초대 링크 URL을 구성.
+  const origin = useOrigin();
 
   const isModalOpen = isOpen && type === "invite";
+  const { server } = data;
 
+  const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 5. **Invite URL**: 서버 데이터에서 초대 코드를 사용해 초대 링크를 구성.
+  const inviteUrl = `${origin}/invite/${server?.inviteCode}`;
+
+  // 6. **onCopy()**: 초대 링크를 클립보드에 복사하고, 복사 완료 후 상태를 변경
+  const onCopy = () => {
+    navigator.clipboard.writeText(inviteUrl);
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 1000);
+  };
+
+  // 7.**onNew()**: Axios를 이용해 서버 초대 링크를 재생성하는 요청을 보냄. 새로운 초대 링크를 응답받으면 상태를 업데이트해 모달에 표시.
+  const onNew = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.patch(
+        `/api/servers/${server?.id}/invite-code`,
+      );
+
+      onOpen("invite", { server: response.data });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <Dialog open={isModalOpen} onOpenChange={onClose}>
       <DialogContent className="overflow-hidden bg-white p-0 text-black">
@@ -55,18 +84,28 @@ export const InviteModal = () => {
         {/* 친구초대 링크 생성*/}
         <div className="p-6">
           <Label className="text-xs font-bold uppercase text-zinc-500 dark:text-secondary/70">
-            = Server invite link
+            Server invite link
           </Label>
           <div className="mt-2 flex items-center gap-x-2">
             <Input
+              readOnly
+              disabled={isLoading}
               className="border-0 bg-zinc-300/50 text-black focus-visible:ring-0 focus-visible:ring-offset-0"
-              value="invite-link"
+              value={inviteUrl}
             />
-            <Button size="icon">
-              <Copy className="h-4 w-4" />
+
+            {/* 링크 복사 버튼 */}
+            <Button disabled={isLoading} size="icon" onClick={onCopy}>
+              {copied ? (
+                <CheckIcon className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
             </Button>
           </div>
           <Button
+            disabled={isLoading}
+            onClick={onNew}
             variant="link"
             size="sm"
             className="mt-4 text-xs text-zinc-500"
